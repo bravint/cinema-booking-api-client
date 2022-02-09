@@ -1,73 +1,80 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
+
+import { reducer, initialState } from './store';
 
 export const App = () => {
-    const [movie, setMovie] = useState();
-    const [title, setTitle] = useState('');
-    const [runtime, setRuntime] = useState();
-    const [submit, setSubmit] = useState(false);
+    const [state, dispatch] = useReducer(reducer, initialState);
 
-    console.log(`states`, {
-        movie,
-        title,
-        runtime,
-        submit,
-    });
+    console.log(`states`, state);
 
     useEffect(() => {
-        fetchFilms();
+        fetchMovies();
     }, []);
 
-    useEffect(() => {
-        if (!submit) return;
-
-        const postNewFilm = async (DataToPost) => {
-            const response = await fetch(`http://localhost:4000/movie`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(DataToPost),
-            });
-            const data = await response.json();
-            console.log(`data posted`, data);
-            await fetchFilms();
-        };
-
-        const newMovieObject = { title: title, runtimeMins: runtime };
-
-        postNewFilm(newMovieObject)
-        .then(clearForm())
-        .then(setSubmit(false))
-    }, [submit, title, runtime]);
-
-    const fetchFilms = async () => {
+    const fetchMovies = async () => {
         try {
             const response = await fetch(`http://localhost:4000/movie`);
+
             const data = await response.json();
-            console.log(`data fetched`, data);
-            setMovie(data);
+
+            dispatch({ type: 'movies', payload: data });
         } catch (error) {
             console.log(`error: `, error);
         }
+    };
+
+    const postMovie = async (newMovie) => {
+        const response = await fetch(`http://localhost:4000/movie`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newMovie),
+        });
+
+        const data = await response.json();
+
+        let newMoviesList = [...state.movies, data];
+
+        dispatch({
+            type: 'movies',
+            payload: newMoviesList,
+        });
     };
 
     const handleChange = (event) => {
         const name = event.target.name;
         const value = event.target.value;
 
-        if (name === 'title') setTitle(value);
-        if (name === 'runtimeMins') setRuntime(value);
+        dispatch({
+            type: name,
+            payload: value,
+        });
     };
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        setSubmit(true);
+
+        const newMovieObject = {
+            title: state.title,
+            runtimeMins: state.runtime,
+        };
+
+        postMovie(newMovieObject);
+        clearForm();
     };
 
     const clearForm = () => {
-        setTitle('')
-        setRuntime('')
-    }
+        dispatch({
+            type: 'title',
+            payload: initialState.title,
+        });
+
+        dispatch({
+            type: 'runtime',
+            payload: initialState.runtime,
+        });
+    };
 
     return (
         <>
@@ -77,25 +84,25 @@ export const App = () => {
                     type="text"
                     name="title"
                     placeholder="Film Title"
-                    value={title}
+                    value={state.title}
                     onChange={(event) => handleChange(event)}
                 />
                 <input
                     type="number"
-                    name="runtimeMins"
+                    name="runtime"
                     placeholder="Runtime"
-                    value={runtime}
+                    value={state.runtime}
                     onChange={(event) => handleChange(event)}
                 />
                 <button>Add!</button>
             </form>
-            {movie && (
+            {state.movies && (
                 <>
                     <h1>Currently Showing</h1>
                     <ul>
-                        {movie.map((element) => {
+                        {state.movies.map((element, index) => {
                             return (
-                                <li>
+                                <li key={index}>
                                     <p>Title: {element.title}</p>
                                     <p>Runtime: {element.runtimeMins}</p>
                                 </li>
