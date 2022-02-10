@@ -7,6 +7,13 @@ export const App = () => {
 
     console.log(`states`, state);
 
+    const handleDispatch = (type, payload) => {
+        dispatch({
+            type,
+            payload,
+        });
+    };
+
     useEffect(() => {
         fetchMovies();
     }, []);
@@ -23,63 +30,73 @@ export const App = () => {
         }
     };
 
-    const postMovie = async (newMovie) => {
-        const response = await fetch(`http://localhost:4000/movie`, {
-            method: 'POST',
+    const fetchConfig = (method, body) => {
+        return {
+            method,
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(newMovie),
-        });
+            body: JSON.stringify(body),
+        };
+    };
+
+    const postMovie = async (newMovie) => {
+        const response = await fetch( `http://localhost:4000/movie`, fetchConfig('POST', newMovie));
 
         const data = await response.json();
 
         let newMoviesList = [...state.movies, data];
 
-        dispatch({
-            type: 'movies',
-            payload: newMoviesList,
-        });
+        handleDispatch('movies', newMoviesList);
     };
+
+    const putMovie = async (updatedMovie) => {
+        const response = await fetch( `http://localhost:4000/movie`, fetchConfig('PUT', updatedMovie));
+
+        const data = await response.json();
+    }
 
     const handleChange = (event) => {
         const name = event.target.name;
         const value = event.target.value;
 
-        dispatch({
-            type: name,
-            payload: value,
-        });
+        handleDispatch(name, value);
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmitNewMovie = (event) => {
         event.preventDefault();
 
-        const newMovieObject = {
+        const newMovie = {
             title: state.title,
             runtimeMins: state.runtime,
         };
 
-        postMovie(newMovieObject);
-        clearForm();
+        postMovie(newMovie);
+
+        clearFormInput('runtime');
+        clearFormInput('title');
     };
 
-    const clearForm = () => {
-        dispatch({
-            type: 'title',
-            payload: initialState.title,
-        });
+    const handleSubmitUpdatedMovie = (event) => {
 
-        dispatch({
-            type: 'runtime',
-            payload: initialState.runtime,
-        });
+    }
+
+    const clearFormInput = (name) => {
+        handleDispatch(name, initialState[name]);
+    };
+
+    const handleClick = (event) => {
+        console.log(event)
+        let movieId = event.currentTarget.id;
+        movieId = parseInt(movieId, 10);
+
+        handleDispatch(`movieId`, movieId);
     };
 
     return (
         <>
             <h1>Add A New Film</h1>
-            <form onSubmit={(event) => handleSubmit(event)}>
+            <form onSubmit={(event) => handleSubmitNewMovie(event)}>
                 <input
                     type="text"
                     name="title"
@@ -100,11 +117,43 @@ export const App = () => {
                 <>
                     <h1>Currently Showing</h1>
                     <ul>
-                        {state.movies.map((element, index) => {
+                        {state.movies.map((element) => {
                             return (
-                                <li key={index}>
+                                <li
+                                    key={element.id}
+                                    id={element.id}
+                                    onClick={(event) => handleClick(event)}
+                                >
                                     <p>Title: {element.title}</p>
                                     <p>Runtime: {element.runtimeMins}</p>
+
+                                    {state.movieId === element.id && (
+                                        <form
+                                            onSubmit={(event) =>
+                                                handleSubmitUpdatedMovie(event)
+                                            }
+                                        >
+                                            <input
+                                                type="text"
+                                                name="title"
+                                                placeholder="Film Title"
+                                                value={state.title}
+                                                onChange={(event) =>
+                                                    handleChange(event)
+                                                }
+                                            />
+                                            <input
+                                                type="number"
+                                                name="runtime"
+                                                placeholder="Runtime"
+                                                value={state.runtime}
+                                                onChange={(event) =>
+                                                    handleChange(event)
+                                                }
+                                            />
+                                            <button>Edit!</button>
+                                        </form>
+                                    )}
                                 </li>
                             );
                         })}
