@@ -1,6 +1,6 @@
 export const initialState = {
     movies: [],
-    runtime: '',
+    runtimeMins: '',
     title: '',
     movieId:'',
 };
@@ -12,10 +12,10 @@ export const reducer = (state, action) => {
                 ...state,
                 movies: action.payload,
             };
-        case 'runtime':
+        case 'runtimeMins':
             return {
                 ...state,
-                runtime: action.payload,
+                runtimeMins: action.payload,
             };
         case 'title':
             return {

@@ -5,6 +5,8 @@ import { reducer, initialState } from './store';
 export const App = () => {
     const [state, dispatch] = useReducer(reducer, initialState);
 
+    const { movies, movieId, title, runtimeMins } = state;
+
     console.log(`states`, state);
 
     const handleDispatch = (type, payload) => {
@@ -21,7 +23,6 @@ export const App = () => {
     const fetchMovies = async () => {
         try {
             const response = await fetch(`http://localhost:4000/movie`);
-
             const data = await response.json();
 
             dispatch({ type: 'movies', payload: data });
@@ -40,21 +41,28 @@ export const App = () => {
         };
     };
 
-    const postMovie = async (newMovie) => {
-        const response = await fetch( `http://localhost:4000/movie`, fetchConfig('POST', newMovie));
+    const PostOrPutMovieToDb = async (method, newMovie) => {
+        try {
+            const response = await fetch( `http://localhost:4000/movie`, fetchConfig(method, newMovie));
+            const data = await response.json();
+            return data
+        } catch (error) {
+            console.log(`error: `, error);
+        }
+    }
 
-        const data = await response.json();
+    const postMovie = async (method, newMovie) => {
+        const data = PostOrPutMovieToDb(method, newMovie)
 
-        let newMoviesList = [...state.movies, data];
+        let newMoviesList = [...movies, data];
 
         handleDispatch('movies', newMoviesList);
     };
 
-    const putMovie = async (updatedMovie) => {
-        const response = await fetch( `http://localhost:4000/movie`, fetchConfig('PUT', updatedMovie));
+    const putMovie = async (method, newMovie) => {
+        const data = PostOrPutMovieToDb(method, newMovie)
 
-        const data = await response.json();
-    }
+    };
 
     const handleChange = (event) => {
         const name = event.target.name;
@@ -67,30 +75,28 @@ export const App = () => {
         event.preventDefault();
 
         const newMovie = {
-            title: state.title,
-            runtimeMins: state.runtime,
+            title,
+            runtimeMins,
         };
 
         postMovie(newMovie);
 
-        clearFormInput('runtime');
+        clearFormInput('runtimeMins');
         clearFormInput('title');
     };
 
-    const handleSubmitUpdatedMovie = (event) => {
-
-    }
+    const handleSubmitUpdatedMovie = (event) => {};
 
     const clearFormInput = (name) => {
         handleDispatch(name, initialState[name]);
     };
 
     const handleClick = (event) => {
-        console.log(event)
-        let movieId = event.currentTarget.id;
-        movieId = parseInt(movieId, 10);
+        console.log(event);
+        let newMovieId = event.currentTarget.id;
+        newMovieId = parseInt(movieId, 10);
 
-        handleDispatch(`movieId`, movieId);
+        handleDispatch(`movieId`, newMovieId);
     };
 
     return (
@@ -101,14 +107,14 @@ export const App = () => {
                     type="text"
                     name="title"
                     placeholder="Film Title"
-                    value={state.title}
+                    value={title}
                     onChange={(event) => handleChange(event)}
                 />
                 <input
                     type="number"
-                    name="runtime"
+                    name="runtimeMins"
                     placeholder="Runtime"
-                    value={state.runtime}
+                    value={runtimeMins}
                     onChange={(event) => handleChange(event)}
                 />
                 <button>Add!</button>
@@ -117,7 +123,7 @@ export const App = () => {
                 <>
                     <h1>Currently Showing</h1>
                     <ul>
-                        {state.movies.map((element) => {
+                        {movies.map((element) => {
                             return (
                                 <li
                                     key={element.id}
@@ -127,7 +133,7 @@ export const App = () => {
                                     <p>Title: {element.title}</p>
                                     <p>Runtime: {element.runtimeMins}</p>
 
-                                    {state.movieId === element.id && (
+                                    {movieId === element.id && (
                                         <form
                                             onSubmit={(event) =>
                                                 handleSubmitUpdatedMovie(event)
@@ -137,16 +143,16 @@ export const App = () => {
                                                 type="text"
                                                 name="title"
                                                 placeholder="Film Title"
-                                                value={state.title}
+                                                value={title}
                                                 onChange={(event) =>
                                                     handleChange(event)
                                                 }
                                             />
                                             <input
                                                 type="number"
-                                                name="runtime"
+                                                name="runtimeMins"
                                                 placeholder="Runtime"
-                                                value={state.runtime}
+                                                value={runtimeMins}
                                                 onChange={(event) =>
                                                     handleChange(event)
                                                 }
